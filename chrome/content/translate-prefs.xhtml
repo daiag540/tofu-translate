@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tofu Translate — Preferences Pane -->
+<vbox id="tofu-translate-prefs"
+      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      xmlns:html="http://www.w3.org/1999/xhtml"
+      flex="1">
+
+  <html:script type="text/javascript">
+    /* Load the prefs script */
+    var rootURI = TofuTranslate ? TofuTranslate.rootURI : "";
+    if (rootURI) {
+      Services.scriptloader.loadSubScript(rootURI + "chrome/content/translate-prefs.js");
+    }
+  </html:script>
+
+  <!-- ═══ API Configuration ═══ -->
+  <groupbox>
+    <caption label="API 配置"/>
+    <hbox align="center">
+      <label control="tofu-api-key" value="API Key:" style="width: 100px;"/>
+      <textbox id="tofu-api-key"
+               preference="extensions.tofu-translate.apiKey"
+               type="password"
+               flex="1"
+               placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"/>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-api-base" value="API Base:" style="width: 100px;"/>
+      <textbox id="tofu-api-base"
+               preference="extensions.tofu-translate.apiBase"
+               flex="1"
+               placeholder="https://api.siliconflow.cn/v1"/>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-model" value="模型:" style="width: 100px;"/>
+      <menulist id="tofu-model"
+                preference="extensions.tofu-translate.model"
+                flex="1">
+        <menupopup id="tofu-model-popup">
+          <!-- Populated dynamically by prefs.js -->
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox style="margin-top: 12px;">
+      <button id="tofu-test-connection"
+              label="测试连接"
+              style="padding: 6px 16px;"/>
+      <label id="tofu-test-result"
+             style="margin-left: 12px; font-size: 12px; color: #6b7280;"/>
+    </hbox>
+  </groupbox>
+
+  <!-- ═══ Translation Settings ═══ -->
+  <groupbox style="margin-top: 12px;">
+    <caption label="翻译设置"/>
+
+    <hbox align="center">
+      <label control="tofu-source-lang" value="源语言:" style="width: 100px;"/>
+      <menulist id="tofu-source-lang"
+                preference="extensions.tofu-translate.sourceLang">
+        <menupopup>
+          <menuitem label="自动检测" value="auto"/>
+          <menuitem label="English" value="en"/>
+          <menuitem label="简体中文" value="zh-CN"/>
+          <menuitem label="日本語" value="ja"/>
+          <menuitem label="한국어" value="ko"/>
+          <menuitem label="Français" value="fr"/>
+          <menuitem label="Deutsch" value="de"/>
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-target-lang" value="目标语言:" style="width: 100px;"/>
+      <menulist id="tofu-target-lang"
+                preference="extensions.tofu-translate.targetLang">
+        <menupopup>
+          <menuitem label="简体中文" value="zh-CN"/>
+          <menuitem label="繁體中文" value="zh-TW"/>
+          <menuitem label="English" value="en"/>
+          <menuitem label="日本語" value="ja"/>
+          <menuitem label="한국어" value="ko"/>
+          <menuitem label="Français" value="fr"/>
+          <menuitem label="Deutsch" value="de"/>
+          <menuitem label="Español" value="es"/>
+        </menupopup>
+      </menulist>
+    </hbox>
+  </groupbox>
+
+  <!-- ═══ Advanced Settings ═══ -->
+  <groupbox style="margin-top: 12px;">
+    <caption label="高级设置"/>
+
+    <hbox align="center">
+      <label control="tofu-chunk-size" value="分段大小:" style="width: 100px;"/>
+      <textbox id="tofu-chunk-size"
+               preference="extensions.tofu-translate.chunkSize"
+               type="number"
+               min="500" max="8000"
+               style="width: 120px;"/>
+      <label value="字符" style="margin-left: 8px; color: #6b7280; font-size: 12px;"/>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-max-tokens" value="最大 Token:" style="width: 100px;"/>
+      <textbox id="tofu-max-tokens"
+               preference="extensions.tofu-translate.maxTokens"
+               type="number"
+               min="512" max="32768"
+               style="width: 120px;"/>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-temperature" value="Temperature:" style="width: 100px;"/>
+      <textbox id="tofu-temperature"
+               preference="extensions.tofu-translate.temperature"
+               type="number"
+               min="0" max="2" step="0.1"
+               style="width: 120px;"/>
+    </hbox>
+
+    <hbox align="center" style="margin-top: 8px;">
+      <label control="tofu-concurrent" value="并发分段:" style="width: 100px;"/>
+      <textbox id="tofu-concurrent"
+               preference="extensions.tofu-translate.concurrentChunks"
+               type="number"
+               min="1" max="5"
+               style="width: 120px;"/>
+    </hbox>
+  </groupbox>
+
+  <!-- ═══ Prompt Template ═══ -->
+  <groupbox style="margin-top: 12px;">
+    <caption label="提示词模板"/>
+    <description style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
+      自定义翻译提示词。可用变量: {"{{"}sourceLang{"}}"}, {"{{"}targetLang{"}}"}, {"{{"}text{"}}"}, {"{{"}domainContext{"}}"}
+    </description>
+    <textbox id="tofu-prompt-template"
+             preference="extensions.tofu-translate.promptTemplate"
+             multiline="true"
+             rows="8"
+             flex="1"
+             style="font-family: monospace; font-size: 12px;"
+             placeholder="留空使用默认模板"/>
+    <hbox style="margin-top: 8px;">
+      <button id="tofu-reset-prompt"
+              label="恢复默认"
+              style="padding: 4px 12px; font-size: 12px;"/>
+    </hbox>
+  </groupbox>
+
+  <!-- ═══ Options ═══ -->
+  <groupbox style="margin-top: 12px;">
+    <caption label="选项"/>
+    <checkbox id="tofu-auto-show"
+              preference="extensions.tofu-translate.autoShowPanel"
+              label="自动显示翻译面板"/>
+    <checkbox id="tofu-save-note"
+              preference="extensions.tofu-translate.saveAsNote"
+              label="自动保存翻译为笔记"/>
+    <checkbox id="tofu-debug"
+              preference="extensions.tofu-translate.debug"
+              label="启用调试日志"/>
+  </groupbox>
+
+  <!-- ═══ About ═══ -->
+  <groupbox style="margin-top: 12px;">
+    <caption label="关于"/>
+    <description style="font-size: 12px; color: #6b7280;">
+      Tofu Translate v1.0.0
+    </description>
+    <description style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+      基于硅基流动 (Tofu) 大模型 API 的 Zotero 全文翻译插件。
+      支持 Qwen、DeepSeek、Llama、GLM 等模型。
+    </description>
+    <description style="font-size: 12px; color: #3b82f6; margin-top: 4px; cursor: pointer;"
+                 onclick="Services.wm.getMostRecentWindow('navigator:browser').openTrustedLinkIn('https://siliconflow.cn', 'tab')">
+      获取 API Key → siliconflow.cn
+    </description>
+  </groupbox>
+
+</vbox>

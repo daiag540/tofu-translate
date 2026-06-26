@@ -1,0 +1,112 @@
+/* ──────────────────────────────────────────────
+   Tofu Translate — Stylesheet
+   ────────────────────────────────────────────── */
+
+/* ── Side Panel Animation ── */
+#tofu-translate-result-panel {
+  animation: tofu-slide-in 0.25s ease-out;
+}
+
+@keyframes tofu-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ── Toast Animation ── */
+#tofu-translate-toast {
+  animation: tofu-fade-up 0.3s ease-out;
+}
+
+@keyframes tofu-fade-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Progress Overlay ── */
+#tofu-translate-overlay {
+  animation: tofu-fade-in 0.2s ease-out;
+}
+
+@keyframes tofu-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Spinner ── */
+@keyframes tofu-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Tab Styles ── */
+.tofu-tab-active {
+  border-bottom-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+  font-weight: 600;
+}
+
+/* ── Preference Pane ── */
+#tofu-translate-prefs {
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#tofu-translate-prefs groupbox {
+  margin-bottom: 0;
+}
+
+#tofu-translate-prefs caption {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+#tofu-translate-prefs textbox,
+#tofu-translate-prefs menulist {
+  padding: 4px 8px;
+}
+
+#tofu-translate-prefs label[control] {
+  font-size: 13px;
+  color: #374151;
+}
+
+#tofu-translate-prefs checkbox {
+  font-size: 13px;
+  color: #374151;
+  margin-top: 4px;
+}
+
+/* ── Reader Translation Popup ── */
+#tofu-reader-translation {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── Scrollbar Styling ── */
+#tofu-translate-result-panel ::-webkit-scrollbar {
+  width: 6px;
+}
+
+#tofu-translate-result-panel ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+#tofu-translate-result-panel ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+#tofu-translate-result-panel ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

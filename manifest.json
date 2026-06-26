@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "Tofu Translate",
+  "version": "1.0.0",
+  "description": "AI-powered full-text translation for Zotero using SiliconFlow LLM API",
+  "author": "andydai",
+  "homepage_url": "https://github.com/daiag540/tofu-translate",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  },
+  "applications": {
+    "zotero": {
+      "id": "tofu-translate@zotero.org",
+      "strict_min_version": "7.0",
+      "strict_max_version": "9.99.99"
+    }
+  }
+}
