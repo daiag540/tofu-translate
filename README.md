@@ -2,13 +2,13 @@
 
 > 🤖 AI 驱动的 Zotero 全文翻译插件 · 支持硅基流动 (Tofu) 大模型 API
 
-[![Zotero 7](https://img.shields.io/badge/Zotero-7-blue)](https://www.zotero.org/)
+[![Zotero 7-9](https://img.shields.io/badge/Zotero-7%2F8%2F9-blue)](https://www.zotero.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-orange)](#)
+[![Version](https://img.shields.io/badge/version-1.0.1-orange)](CHANGELOG.md)
 
 ## 📖 简介
 
-Tofu Translate 是一款 **Zotero 7 全文翻译插件**，基于硅基流动 (Tofu) 平台的大语言模型 API，为学术文献提供高质量 AI 翻译。
+Tofu Translate 是一款 **Zotero 全文翻译插件**（支持 Zotero 7/8/9），基于硅基流动 (Tofu) 平台的大语言模型 API，为学术文献提供高质量 AI 翻译。
 
 ### 为什么选择大模型翻译？
 
@@ -62,7 +62,7 @@ Tofu Translate 是一款 **Zotero 7 全文翻译插件**，基于硅基流动 (T
 
 ### 方法一：直接安装 XPI
 
-1. 下载最新 [`.xpi` 文件](https://github.com/yourname/tofu-translate/releases)
+1. 下载最新 [`.xpi` 文件](https://github.com/daiag540/tofu-translate/releases)
 2. Zotero → 工具 → 插件 → 齿轮图标 → `Install Add-on From File...`
 3. 选择下载的 `.xpi` 文件
 4. 重启 Zotero
@@ -73,7 +73,7 @@ Tofu Translate 是一款 **Zotero 7 全文翻译插件**，基于硅基流动 (T
 git clone https://github.com/daiag540/tofu-translate.git
 cd tofu-translate
 node scripts/build.js
-# 然后将 build/tofu-translate-1.0.0.xpi 拖入 Zotero
+# 然后将 build/tofu-translate-1.0.1.xpi 拖入 Zotero
 ```
 
 ---
@@ -163,6 +163,7 @@ tofu-translate/
 ├── bootstrap.js               # 插件入口
 ├── prefs.js                   # 默认偏好设置
 ├── updates.json               # 自动更新配置
+├── CHANGELOG.md               # 变更日志
 │
 ├── chrome/
 │   └── content/
@@ -188,7 +189,7 @@ tofu-translate/
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                    Zotero 7 Client                     │
+│                    Zotero Client                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  │
 │  │ PDF Reader  │  │ Item Pane   │  │  Menu/Tools  │  │
 │  │ (划词翻译)   │  │ (全文翻译)   │  │  (剪贴板)    │  │
@@ -245,4 +246,5 @@ MIT License — 详见 [LICENSE](LICENSE)
 - [硅基流动平台](https://siliconflow.cn) — 获取 API Key
 - [硅基流动 API 文档](https://docs.siliconflow.cn) — API 参考
 - [Zotero 插件开发文档](https://www.zotero.org/support/dev/zotero_7_for_developers)
+- [更新日志](CHANGELOG.md)
 - [Zotero 中文社区](https://zotero-chinese.com)

@@ -24,7 +24,6 @@ const INCLUDE = [
   "manifest.json",
   "bootstrap.js",
   "prefs.js",
-  "chrome.manifest",
   "chrome",
   "locale",
   "icons",
