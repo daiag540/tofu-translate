@@ -53,7 +53,7 @@ var TofuUI = {
     );
 
     // Spinner
-    let spinner = doc.createXULElement("html:div");
+    let spinner = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     spinner.setAttribute(
       "style",
       `
@@ -203,8 +203,19 @@ var TofuUI = {
       "padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px;"
     );
     copyBtn.addEventListener("click", () => {
-      Services.clipboard.helper.copyString(translatedText);
-      this.showNotification("已复制到剪贴板");
+      try {
+        let transferable = Cc["@mozilla.org/widget/transferable;1"]
+          .createInstance(Ci.nsITransferable);
+        transferable.init(null);
+        let str = Cc["@mozilla.org/supports-string;1"]
+          .createInstance(Ci.nsISupportsString);
+        str.data = translatedText;
+        transferable.setTransferData("text/unicode", str);
+        Services.clipboard.setData(transferable, null, Services.clipboard.kGlobalClipboard);
+        this.showNotification("已复制到剪贴板");
+      } catch (e) {
+        this.showNotification("复制失败: " + e.message);
+      }
     });
 
     let saveBtn = null;
@@ -275,19 +286,19 @@ var TofuUI = {
     );
 
     // Side-by-side uses a CSS grid
-    let grid = doc.createXULElement("html:div");
+    let grid = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     let gridStyle =
       "display: grid; grid-template-columns: 1fr 1fr; height: 100%;";
     grid.setAttribute("style", gridStyle);
 
-    let origCol = doc.createXULElement("html:div");
+    let origCol = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     origCol.setAttribute(
       "style",
       "padding: 16px; font-size: 13px; line-height: 1.7; color: #6b7280; white-space: pre-wrap; border-right: 1px solid #e5e7eb; overflow: auto;"
     );
     origCol.textContent = originalText;
 
-    let transCol = doc.createXULElement("html:div");
+    let transCol = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     transCol.setAttribute(
       "style",
       "padding: 16px; font-size: 14px; line-height: 1.7; color: #1f2937; white-space: pre-wrap; overflow: auto;"
@@ -373,7 +384,7 @@ var TofuUI = {
     try {
       let ps = Services.prompt;
       // Silent notification: just log
-      Zotero.log("Tofu Translate: " + message);
+      Zotero.debug("Tofu Translate: " + message);
     } catch (e) {
       // Fallback
     }
@@ -536,9 +547,10 @@ var TofuUI = {
   _getActiveWindow() {
     let win = Services.wm.getMostRecentWindow("navigator:browser");
     if (!win) {
-      // Try Zotero's main window
-      let windows = Zotero.getMainWindows();
-      if (windows.length > 0) win = windows[0];
+      // Fallback: try Zotero's main window
+      try {
+        win = Zotero.getMainWindow();
+      } catch (e) {}
     }
     return win;
   },

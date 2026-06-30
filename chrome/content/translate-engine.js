@@ -372,182 +372,87 @@ Return ONLY the translated text without any additional commentary, explanations,
 
     this._log("Request URL: " + url);
 
-    let response = await this._fetch(url, {
-      method: "POST",
+    let timeout = Zotero.Prefs.get("extensions.tofu-translate.timeout", true) || 120000;
+
+    let response = await Zotero.HTTP.request("POST", url, {
+      body: jsonBody,
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + apiKey,
       },
-      body: jsonBody,
+      timeout: timeout,
     });
 
-    if (!response.ok) {
-      let errorText = await response.text();
-      this._log("API Error: " + response.status + " - " + errorText);
+    let status = response.status;
+    let responseText = response.responseText;
 
-      // Parse error
-      try {
-        let errorJSON = JSON.parse(errorText);
-        throw new Error(
-          "API Error [" + response.status + "]: " + (errorJSON.error?.message || errorText)
-        );
-      } catch (e) {
-        if (e.message.startsWith("API Error")) throw e;
-        throw new Error(
-          "HTTP Error " + response.status + ": " + errorText.substring(0, 200)
-        );
-      }
+    if (status >= 200 && status < 300) {
+      return JSON.parse(responseText);
     }
 
-    return await response.json();
+    this._log("API Error: " + status + " - " + responseText);
+
+    try {
+      let errorJSON = JSON.parse(responseText);
+      throw new Error(
+        "API Error [" + status + "]: " + (errorJSON.error?.message || responseText)
+      );
+    } catch (e) {
+      if (e.message.startsWith("API Error")) throw e;
+      throw new Error(
+        "HTTP Error " + status + ": " + responseText.substring(0, 200)
+      );
+    }
   },
 
   /**
-   * Streaming API call using fetch + ReadableStream.
+   * Streaming API call.
    */
   async _callAPIStream(baseURL, apiKey, body, onChunk) {
     let url = baseURL.replace(/\/+$/, "") + "/chat/completions";
     let jsonBody = JSON.stringify(body);
 
-    let response = await this._fetch(url, {
-      method: "POST",
+    let timeout = Zotero.Prefs.get("extensions.tofu-translate.timeout", true) || 120000;
+
+    let response = await Zotero.HTTP.request("POST", url, {
+      body: jsonBody,
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + apiKey,
       },
-      body: jsonBody,
+      timeout: timeout,
     });
 
-    if (!response.ok) {
-      let errorText = await response.text();
-      throw new Error("API Error: " + response.status + " - " + errorText);
+    let status = response.status;
+    let responseText = response.responseText;
+
+    if (status < 200 || status >= 300) {
+      throw new Error("API Error: " + status + " - " + responseText);
     }
 
-    // Read the stream
-    let reader = response.body.getReader();
-    let decoder = new TextDecoder();
-    let buffer = "";
+    // Parse SSE stream from response text
     let fullText = "";
+    let lines = responseText.split("\n");
 
-    while (true) {
-      let { done, value } = await reader.read();
-      if (done) break;
+    for (let line of lines) {
+      if (line.startsWith("data: ")) {
+        let data = line.slice(6).trim();
+        if (data === "[DONE]") continue;
 
-      buffer += decoder.decode(value, { stream: true });
-      let lines = buffer.split("\n");
-      buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-      for (let line of lines) {
-        if (line.startsWith("data: ")) {
-          let data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
-
-          try {
-            let parsed = JSON.parse(data);
-            let content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              if (onChunk) onChunk(content, fullText);
-            }
-          } catch (e) {
-            // Skip malformed JSON lines
+        try {
+          let parsed = JSON.parse(data);
+          let content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            fullText += content;
+            if (onChunk) onChunk(content, fullText);
           }
+        } catch (e) {
+          // Skip malformed JSON lines
         }
       }
     }
 
     return fullText;
-  },
-
-  /**
-   * Compatibility wrapper for fetch (Zotero uses XHR natively).
-   */
-  async _fetch(url, options) {
-    return new Promise((resolve, reject) => {
-      try {
-        let xhr = Components.classes[
-          "@mozilla.org/xmlextras/xmlhttprequest;1"
-        ].createInstance(Components.interfaces.nsIXMLHttpRequest);
-
-        xhr.open(options.method || "GET", url, true);
-        xhr.timeout = Zotero.Prefs.get(
-          "extensions.tofu-translate.timeout",
-          true
-        );
-
-        // Set headers
-        if (options.headers) {
-          for (let [key, value] of Object.entries(options.headers)) {
-            // Skip forbidden headers in XHR
-            if (
-              [
-                "host",
-                "origin",
-                "referer",
-                "user-agent",
-                "content-length",
-              ].includes(key.toLowerCase())
-            ) {
-              continue;
-            }
-            xhr.setRequestHeader(key, value);
-          }
-        }
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve({
-              ok: true,
-              status: xhr.status,
-              json: () => Promise.resolve(JSON.parse(xhr.responseText)),
-              text: () => Promise.resolve(xhr.responseText),
-              body: xhr.responseText
-                ? {
-                    getReader: () => {
-                      let encoder = new TextEncoder();
-                      let data = encoder.encode(xhr.responseText);
-                      let done = false;
-                      return {
-                        read: () => {
-                          if (done)
-                            return Promise.resolve({ done: true, value: null });
-                          done = true;
-                          return Promise.resolve({ done: false, value: data });
-                        },
-                      };
-                    },
-                  }
-                : null,
-            });
-          } else {
-            resolve({
-              ok: false,
-              status: xhr.status,
-              json: () => {
-                try {
-                  return Promise.resolve(JSON.parse(xhr.responseText));
-                } catch (e) {
-                  return Promise.reject(e);
-                }
-              },
-              text: () => Promise.resolve(xhr.responseText),
-            });
-          }
-        };
-
-        xhr.onerror = () => {
-          reject(new Error("Network error"));
-        };
-
-        xhr.ontimeout = () => {
-          reject(new Error("Request timed out"));
-        };
-
-        xhr.send(options.body || null);
-      } catch (e) {
-        reject(e);
-      }
-    });
   },
 
   /**

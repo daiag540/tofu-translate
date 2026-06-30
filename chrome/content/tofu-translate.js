@@ -80,8 +80,14 @@ var TofuTranslate = {
     this.rootURI = rootURI;
 
     // Load sub-modules
-    Services.scriptloader.loadSubScript(rootURI + "chrome/content/translate-engine.js");
-    Services.scriptloader.loadSubScript(rootURI + "chrome/content/translate-ui.js");
+    try {
+      Services.scriptloader.loadSubScript(rootURI + "chrome/content/translate-engine.js");
+      Services.scriptloader.loadSubScript(rootURI + "chrome/content/translate-ui.js");
+    } catch (e) {
+      Zotero.debug("Tofu Translate: Failed to load sub-modules — " + e);
+      if (e.stack) Zotero.debug(e.stack);
+      throw e;
+    }
 
     // Initialize engine
     TofuEngine.init({
@@ -100,7 +106,7 @@ var TofuTranslate = {
     });
 
     this.initialized = true;
-    this.log("Initialized v" + version);
+    Zotero.debug("Tofu Translate: Initialized v" + version);
   },
 
   /**
@@ -132,9 +138,10 @@ var TofuTranslate = {
    * Inject UI into all currently open windows.
    */
   addToAllWindows() {
-    let windows = Zotero.getMainWindows();
-    for (let win of windows) {
-      this.addToWindow(win);
+    let enumerator = Services.wm.getEnumerator("navigator:browser");
+    while (enumerator.hasMoreElements()) {
+      let win = enumerator.getNext();
+      if (win) this.addToWindow(win);
     }
   },
 
@@ -159,9 +166,10 @@ var TofuTranslate = {
    * Remove UI from all open windows.
    */
   removeFromAllWindows() {
-    let windows = Zotero.getMainWindows();
-    for (let win of windows) {
-      this.removeFromWindow(win);
+    let enumerator = Services.wm.getEnumerator("navigator:browser");
+    while (enumerator.hasMoreElements()) {
+      let win = enumerator.getNext();
+      if (win) this.removeFromWindow(win);
     }
   },
 
@@ -282,14 +290,18 @@ var TofuTranslate = {
   },
 
   _registerPrefPane() {
-    Zotero.PreferencePanes.register({
-      pluginID: this.id,
-      src: this.rootURI + "chrome/content/translate-prefs.xhtml",
-      scripts: [this.rootURI + "chrome/content/translate-prefs.js"],
-      stylesheets: [this.rootURI + "chrome/content/style.css"],
-      label: "Tofu Translate",
-      image: this.rootURI + "icons/icon-32.png",
-    });
+    try {
+      Zotero.PreferencePanes.register({
+        pluginID: this.id,
+        src: this.rootURI + "chrome/content/translate-prefs.xhtml",
+        scripts: [this.rootURI + "chrome/content/translate-prefs.js"],
+        stylesheets: [this.rootURI + "chrome/content/style.css"],
+        label: "Tofu Translate",
+        image: this.rootURI + "icons/icon-32.png",
+      });
+    } catch (e) {
+      Zotero.debug("Tofu Translate: Failed to register prefs pane — " + e);
+    }
   },
 
   _registerReaderHooks() {
@@ -430,30 +442,28 @@ var TofuTranslate = {
   async _extractPDFText(attachment) {
     try {
       // Use Zotero's fulltext index if available
-      let fulltext = await attachment.getFulltext();
-      if (fulltext) {
-        return fulltext;
+      let indexedPages = await Zotero.Fulltext.getPages(attachment.id);
+      if (indexedPages && indexedPages.totalPages > 0) {
+        // indexedPages is { totalPages, pages: [...] }
+        let pages = indexedPages.pages || [];
+        let text = pages
+          .map((p) => (typeof p === "string" ? p : p.text || ""))
+          .filter(Boolean)
+          .join("\n\n");
+        if (text.trim()) return text;
       }
     } catch (e) {
-      this.log("Fulltext extraction failed: " + e);
+      this.log("Fulltext extraction via getPages failed: " + e);
     }
 
-    // Fallback: try reading stored index
+    // Fallback: try Zotero.Fulltext.getItemContent
     try {
-      let path = attachment.getFilePath();
-      if (!path) return null;
-
-      // For Zotero 7, try reading indexed text
-      let indexedPages = await Zotero.Fulltext.getPagesForItem(attachment.id);
-      if (indexedPages && indexedPages.length > 0) {
-        let text = indexedPages
-          .map((p) => p.text || "")
-          .filter(Boolean)
-          .join("\n");
-        return text;
+      let content = await Zotero.Fulltext.getItemContent(attachment.id);
+      if (content && content.trim()) {
+        return content;
       }
     } catch (e) {
-      this.log("Indexed fulltext read failed: " + e);
+      this.log("Fulltext getItemContent failed: " + e);
     }
 
     return null;
@@ -464,18 +474,32 @@ var TofuTranslate = {
    */
   async translateClipboard() {
     try {
-      let text = Services.clipboard
-        .getData("text/unicode")
-        ?.QueryInterface(Ci.nsISupportsString);
-      if (!text || !text.data || !text.data.trim()) {
+      let text = "";
+      try {
+        // Zotero 7+: use the clipboard helper
+        let transferable = Cc["@mozilla.org/widget/transferable;1"]
+          .createInstance(Ci.nsITransferable);
+        transferable.init(null);
+        transferable.addDataFlavor("text/unicode");
+        Services.clipboard.getData(transferable, Services.clipboard.kGlobalClipboard);
+        let data = {};
+        transferable.getTransferData("text/unicode", data, {});
+        if (data.value) {
+          text = data.value.QueryInterface(Ci.nsISupportsString).data;
+        }
+      } catch (e) {
+        this.log("Clipboard read failed: " + e);
+      }
+
+      if (!text || !text.trim()) {
         TofuUI.showNotification("剪贴板为空");
         return;
       }
 
       TofuUI.showProgressDialog("正在翻译剪贴板内容...");
-      let translated = await this._translateText(text.data, null);
+      let translated = await this._translateText(text, null);
       TofuUI.hideProgressDialog();
-      TofuUI.showTranslationResult(null, text.data, translated);
+      TofuUI.showTranslationResult(null, text, translated);
     } catch (e) {
       TofuUI.hideProgressDialog();
       TofuUI.showNotification("翻译失败: " + e.message);
